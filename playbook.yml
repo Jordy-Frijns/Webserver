@@ -1,0 +1,71 @@
+- name: configure webserver
+  hosts: localhost
+  become: yes
+  remote_user: ubuntu
+  become_method: sudo
+  connection: local
+  tasks:
+
+    #INSTALLING PACKAGES
+#    - name: Update all packages
+#      apt:
+#        upgrade: dist
+          
+#    - name: Upgrade all packages
+#      apt:
+#        name: "*"
+#        state: latest
+
+    - name: Install packages
+      apt:
+        name: 
+          - apache2
+          - php
+          - mysql-client
+        state: present
+
+    - name: Remove webapp directory
+      file:
+        state: absent
+        path: /var/www/html/webapp/
+        
+    #PULLING FROM GIT REPO        
+    - name: Git pull from git repo
+      git:
+          repo: 'https://github.com/afx42/webapp.git'
+          dest: /var/www/html/webapp
+          clone: yes
+          update: yes
+          version: master
+
+    #EDITING INDEX.PHP
+    - name: Ensure password is set correctly
+      lineinfile:
+        path: /var/www/html/webapp/index.php
+        regexp: '^$password ='
+        line: $password = "globaluser";
+
+    - name: Ensure servername is set correctly
+      lineinfile:
+        path: /var/www/html/webapp/index.php
+        regexp: '^$servername ='
+        #How to define the database server here?
+        line: $servername = "CHANGETHIS";
+
+    - name: Ensure username is set correctly
+      lineinfile:
+        path: /var/www/html/webapp/index.php
+        regexp: '^$username ='
+        line: $username = "globaluser";
+
+    - name: Ensure database name is set correctly
+      lineinfile:
+        path: /var/www/html/webapp/index.php
+        regexp: '^$dbname ='
+        line: $dbname = "employees";
+
+    #RESTART APACHE2
+    - name: Restart apache2
+      service: 
+        name: apache2
+        state: restarted
